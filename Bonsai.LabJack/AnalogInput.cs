@@ -64,8 +64,12 @@ namespace Bonsai.LabJack
                         while (!cancellationToken.IsCancellationRequested)
                         {
                             LJM.eStreamRead(handle, data, ref deviceScanBacklog, ref ljmScanBacklog);
-                            var output = Mat.FromArray(data, addresses.Length, scansPerRead, Depth.F64, 1);
-                            observer.OnNext(output);
+                            using (var dataHeader = Mat.CreateMatHeader(data, scansPerRead, addresses.Length, Depth.F64, 1))
+                            {
+                                var output = new Mat(dataHeader.Cols, dataHeader.Rows, dataHeader.Depth, dataHeader.Channels);
+                                CV.Transpose(dataHeader, output);
+                                observer.OnNext(output);
+                            }
                         }
 
                         LJM.eStreamStop(handle);
